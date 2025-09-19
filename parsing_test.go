@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"sync"
 	"testing"
-	"time"
 	"unicode"
 )
 
@@ -99,36 +98,6 @@ func TestConstantParsing(test *testing.T) {
 				{
 					Kind:  STRING,
 					Value: "foo",
-				},
-			},
-		},
-		{
-			Name:  "Single time, RFC3339, only date",
-			Input: "'2014-01-02'",
-			Expected: []ExpressionToken{
-				{
-					Kind:  TIME,
-					Value: time.Date(2014, time.January, 2, 0, 0, 0, 0, time.Local),
-				},
-			},
-		},
-		{
-			Name:  "Single time, RFC3339, with hh:mm",
-			Input: "'2014-01-02 14:12'",
-			Expected: []ExpressionToken{
-				{
-					Kind:  TIME,
-					Value: time.Date(2014, time.January, 2, 14, 12, 0, 0, time.Local),
-				},
-			},
-		},
-		{
-			Name:  "Single time, RFC3339, with hh:mm:ss",
-			Input: "'2014-01-02 14:12:22'",
-			Expected: []ExpressionToken{
-				{
-					Kind:  TIME,
-					Value: time.Date(2014, time.January, 2, 14, 12, 22, 0, time.Local),
 				},
 			},
 		},

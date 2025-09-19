@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 	"unicode"
 	"unicode/utf8"
 )
@@ -80,7 +79,6 @@ func readToken(stream *lexerStream, state lexerState, functions map[string]Expre
 	var function ExpressionFunction
 	var ret ExpressionToken
 	var tokenValue interface{}
-	var tokenTime time.Time
 	var tokenString string
 	var kind TokenKind
 	var character rune
@@ -216,14 +214,8 @@ func readToken(stream *lexerStream, state lexerState, functions map[string]Expre
 			// advance the stream one position, since reading until false assumes the terminator is a real token
 			stream.rewind(-1)
 
-			// check to see if this can be parsed as a time.
-			tokenTime, found = tryParseTime(tokenValue.(string))
-			if found {
-				kind = TIME
-				tokenValue = tokenTime
-			} else {
-				kind = STRING
-			}
+			kind = STRING
+
 			break
 		}
 
@@ -492,71 +484,6 @@ func isVariableName(character rune) bool {
 func isNotClosingBracket(character rune) bool {
 
 	return character != ']'
-}
-
-type timeFormat struct {
-	format    string
-	minLength int
-	maxLength int
-}
-
-/*
-Attempts to parse the [candidate] as a Time.
-Tries a series of standardized date formats, returns the Time if one applies,
-otherwise returns false through the second return.
-*/
-func tryParseTime(candidate string) (time.Time, bool) {
-
-	var ret time.Time
-	var found bool
-
-	if !strings.Contains(candidate, ":") && !strings.Contains(candidate, "-") {
-		// The blow formats either have a : or a - in them. If the string contains neither it cannot be a time string
-		return time.Now(), false
-	}
-
-	timeFormats := [...]timeFormat{
-		{time.ANSIC, len(time.ANSIC) - 1, len(time.ANSIC)},
-		{time.UnixDate, len(time.UnixDate) - 1, len(time.ANSIC)},
-		{time.RubyDate, len(time.RubyDate), len(time.RubyDate)},
-		{time.Kitchen, len(time.Kitchen), len(time.Kitchen) + 1},
-		{time.RFC3339, len(time.RFC3339), len(time.RFC3339)},
-		{time.RFC3339Nano, len(time.RFC3339Nano), len(time.RFC3339Nano)},
-		{"2006-01-02", 10, 10},                         // RFC 3339
-		{"2006-01-02 15:04", 16, 16},                   // RFC 3339 with minutes
-		{"2006-01-02 15:04:05", 19, 19},                // RFC 3339 with seconds
-		{"2006-01-02 15:04:05-07:00", 25, 25},          // RFC 3339 with seconds and timezone
-		{"2006-01-02T15Z0700", 18, 18},                 // ISO8601 with hour
-		{"2006-01-02T15:04Z0700", 21, 21},              // ISO8601 with minutes
-		{"2006-01-02T15:04:05Z0700", 24, 24},           // ISO8601 with seconds
-		{"2006-01-02T15:04:05.999999999Z0700", 34, 34}, // ISO8601 with nanoseconds
-	}
-
-	for _, format := range timeFormats {
-		// Avoid trying to parse formats it could not be to reduce allocation of time parse errors
-		if len(candidate) < format.minLength || len(candidate) > format.maxLength {
-			continue
-		}
-		ret, found = tryParseExactTime(candidate, format.format)
-		if found {
-			return ret, true
-		}
-	}
-
-	return time.Now(), false
-}
-
-func tryParseExactTime(candidate string, format string) (time.Time, bool) {
-
-	var ret time.Time
-	var err error
-
-	ret, err = time.ParseInLocation(format, candidate, time.Local)
-	if err != nil {
-		return time.Now(), false
-	}
-
-	return ret, true
 }
 
 func getFirstRune(candidate string) rune {
